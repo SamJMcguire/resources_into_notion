@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Johari Window Analysis</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    #johari-window {
+        width: 500px;
+        height: 500px;
+        position: relative;
+        margin: 20px auto;
+        border: 1px solid #ccc;
+    }
+    .axis {
+        position: absolute;
+        background-color: #ddd;
+        width: 1px;
+        height: 100%;
+    }
+    .horizontal-axis {
+        top: 50%;
+        left: 0;
+    }
+    .vertical-axis {
+        top: 0;
+        left: 50%;
+        height: 1px;
+    }
+    .person {
+        position: absolute;
+        border: 2px solid #333;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        background-color: #ccc;
+        cursor: pointer;
+    }
+    .control-panel {
+        text-align: center;
+        margin-top: 20px;
+    }
+    .analysis {
+        margin-top: 20px;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+<div id="heading">
+    <h1 id="name" contenteditable="true">John Doe</h1>
+    <h2 id="title" contenteditable="true">Software Engineer</h2>
+</div>
+
+<div id="johari-window">
+    <div class="axis horizontal-axis" id="horizontal-axis"></div>
+    <div class="axis vertical-axis" id="vertical-axis"></div>
+    <div class="person" id="person"></div>
+</div>
+
+<div class="control-panel">
+    <label for="horizontal-label">Horizontal Axis Label:</label>
+    <input type="text" id="horizontal-label" value="Trust" placeholder="Enter label">
+
+    <label for="vertical-label">Vertical Axis Label:</label>
+    <input type="text" id="vertical-label" value="Openness" placeholder="Enter label">
+
+    <button onclick="updateAxes()">Update Axes</button>
+    <button onclick="savePosition()">Save Position</button>
+    <button onclick="printPdf()">Print/Export to PDF</button>
+</div>
+
+<div class="analysis" id="analysis"></div>
+<div class="report-comment" id="report-comment"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    const johariWindow = document.getElementById('johari-window');
+    const person = document.getElementById('person');
+    const horizontalLabelInput = document.getElementById('horizontal-label');
+    const verticalLabelInput = document.getElementById('vertical-label');
+    const nameElement = document.getElementById('name');
+    const titleElement = document.getElementById('title');
+    const analysisDiv = document.getElementById('analysis');
+    const reportCommentDiv = document.getElementById('report-comment');
+    let isPinned = false;
+
+    // Function to update person's position based on user input
+    function updatePosition(x, y) {
+        if (!isPinned) {
+            person.style.left = `${x}px`;
+            person.style.top = `${y}px`;
+            generateAnalysis();
+            generateReportComment();
+        }
+    }
+
+    // Function to pin/unpin person's position
+    function togglePin() {
+        isPinned = !isPinned;
+    }
+
+    // Function to update axes based on user input
+    function updateAxes() {
+        const horizontalLabel = horizontalLabelInput.value;
+        const verticalLabel = verticalLabelInput.value;
+
+        const horizontalAxis = document.getElementById('horizontal-axis');
+        const verticalAxis = document.getElementById('vertical-axis');
+
+        horizontalAxis.style.top = '50%';
+        verticalAxis.style.left = '50%';
+
+        horizontalAxis.style.height = '1px';
+        verticalAxis.style.width = '1px';
+
+        horizontalAxis.style.backgroundColor = '#333';
+        verticalAxis.style.backgroundColor = '#333';
+
+        // Update axis labels
+        horizontalAxis.style.transform = 'translate(-50%, -50%) rotate(90deg)';
+        horizontalAxis.style.width = '100%';
+        verticalAxis.style.transform = 'translate(-50%, -50%)';
+
+        // Update axis labels
+        horizontalAxis.innerHTML = horizontalLabel;
+        verticalAxis.innerHTML = verticalLabel;
+
+        generateAnalysis();
+        generateReportComment();
+    }
+
+    // Function to save person's position and axis labels
+    function savePosition() {
+        const x = parseFloat(person.style.left);
+        const y = parseFloat(person.style.top);
+        const horizontalLabel = horizontalLabelInput.value;
+        const verticalLabel = verticalLabelInput.value;
+
+        // Save the data as desired, for example, you can send it to a server or store it locally
+        console.log(`Position: (${x}, ${y}), Horizontal Label: ${horizontalLabel}, Vertical Label: ${verticalLabel}`);
+        alert('Position saved!');
+    }
+
+    // Function to generate analysis based on current position
+    function generateAnalysis() {
+        const x = parseFloat(person.style.left);
+        const y = parseFloat(person.style.top);
+
+        const horizontalLabel = horizontalLabelInput.value;
+        const verticalLabel = verticalLabelInput.value;
+
+        let quadrant = '';
+        let horizontalComparison = x < 250 ? 'Low' : 'High';
+        let verticalComparison = y < 250 ? 'Low' : 'High';
+
+        if (x < 250 && y < 250) {
+            quadrant = `Quadrant I`;
+        } else if (x >= 250 && y < 250) {
+            quadrant = `Quadrant II`;
+        } else if (x < 250 && y >= 250) {
+            quadrant = `Quadrant III`;
+        } else {
+            quadrant = `Quadrant IV`;
+        }
+
+        const analysis = `${nameElement.textContent} is in ${quadrant}, ${horizontalComparison} ${horizontalLabel.toLowerCase()} and ${verticalComparison} ${verticalLabel.toLowerCase()}`;
+
+        analysisDiv.textContent = analysis;
+    }
+
+    // Function to generate report comment based on analysis
+    async function generateReportComment() {
+        const horizontalLabel = horizontalLabelInput.value;
+        const verticalLabel = verticalLabelInput.value;
+
+        const response = await axios.post('YOUR_CHATBOT_API_ENDPOINT', {
+            analysis: analysisDiv.textContent,
+            horizontalLabel: horizontalLabel,
+            verticalLabel: verticalLabel
+        });
+
+        reportCommentDiv.textContent = response.data.comment;
+    }
+
+    // Function to print or export to PDF
+    function printPdf() {
+        const pdf = new jsPDF();
+        const johariWindowRect = johariWindow.getBoundingClientRect();
+        const johariWindowData = `<h1>Johari Window Analysis</h1>
+                                  <p>Name: ${nameElement.textContent}</p>
+                                  <p>Title: ${titleElement.textContent}</p>
+                                  <p>Position: (${parseFloat(person.style.left)}, ${parseFloat(person.style.top)})</p>
+                                  <p>Horizontal Axis Label: ${horizontalLabelInput.value}</p>
+                                  <p>Vertical Axis Label: ${verticalLabelInput.value}</p>
+                                  <p>${analysisDiv.textContent}</p>
+                                  <p>${reportCommentDiv.textContent}</p>`;
+        
+        pdf.fromHTML(johariWindowData, johariWindowRect.left, johariWindowRect.top);
+        pdf.save('johari_window.pdf');
+    }
+
+    // Event listener to track mouse movements and update person's position accordingly
+    johariWindow.addEventListener('mousemove', function(e) {
+        const rect = johariWindow.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        updatePosition(x, y);
+    });
+
+    // Event listener to pin/unpin person's position on click
+    johariWindow.addEventListener('click', function(e) {
+        togglePin();
+        if (!isPinned) {
+            const rect = johariWindow.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            updatePosition(x, y);
+        }
+    });
+
+    // Initially update axes, analysis, and report comment
+    updateAxes();
+</script>
+
+</body>
+</html>
